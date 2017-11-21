@@ -23,8 +23,6 @@ create table enrolledusers (
         title varchar not null,
         wsdate varchar not null,
         location varchar not null,
-        firstname varchar not null,
-        lastname varchar not null,
         foreign key (username) references users(username),
         foreign key (title, wsdate, location) references workshops(title, wsdate, location)
 );

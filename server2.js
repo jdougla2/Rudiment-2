@@ -74,7 +74,7 @@ app.get('/attendees', async (req, res) => {
 	var date = req.query.date;
 	var locations = req.query.locations;
 	try{
-		var response = await pool.query('select * from enrolledusers where title = $1 and wsdate = $2 and location = $3', [title, date, locations]);
+		var response = await pool.query('select users.firstname, users.lastname from users join username on users.username = enrolledusers.username where title = $1 and wsdate = $2 and location = $3', [title, date, locations]);
 		var ary = [];
 		for(var i=0; i < response.rows.length; i++){
 			var obj = response.rows[i];
@@ -128,6 +128,30 @@ app.post('/add-workshop', async(req, res) => {
 	} catch(e) {
 		console.error('Error running query ' + e);
 	}	
+});
+
+app.post('/enroll', async(req, res) => {
+	var username = req.body.username;
+	var title = req.body.title;
+	var date = req.body.date;
+	var location = req.body.location;
+
+	try{
+		var enroll1 = await pool.query('select * from users where username = $1', [username]);
+		var enroll2 = await pool.query('select * from workshops where title = $1 and wsdate = $2 and location = $3', [title, date, location]);
+		var enroll3 = await pool.query('select * from enrolledusers where title = $1 and wsdate = $2 and location = $3', [title, date, location]);
+		var enroll4 = await pool.query('select maxseats from workshops where title = $1 and wsdate = $2 and location = $3', [title, date, location]);
+		if(enroll1.rows.length === 0) {
+			res.json({status: 'user does not exist'});
+		} else if (enroll2.rows.length === 0) {
+			res.json({status: 'workshop does not exist'});
+		} else if (enroll3.rows.length >= enroll4){
+			res.json({status: 'no seats available'});
+		} else {
+			var enrollee = await pool.query('insert into enrolledusers values ($1, $2, $3, $4)', [username, title, date, location]);
+			res.json({status: 'user added'});
+		}	
+	}
 });
 
 app.delete('/delete-user', async(req, res) => {
